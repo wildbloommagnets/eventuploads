@@ -6,33 +6,76 @@
     <title>Photo Portal</title>
     <script src="https://cdn.tailwindcss.com"></script>
 </head>
-<body id="body-bg" class="bg-gray-100 flex items-center justify-center min-h-screen p-4 transition-colors duration-500">
-    <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md text-center border border-gray-100">
-        <img id="event-logo" src="" alt="Logo" class="mx-auto mb-4 h-24 object-contain hidden">
-        <h1 id="event-name" class="text-2xl font-bold text-gray-800 mb-1">Loading...</h1>
-        <p id="event-tagline" class="text-sm text-gray-500 mb-6 italic">Connecting to your wedding...</p>
+<body id="body-bg" class="flex items-center justify-center min-h-screen p-4 transition-colors duration-500">
+    <div id="event-card" class="p-8 rounded-3xl shadow-2xl w-full max-w-md text-center border border-gray-100">
+        <img id="event-logo" src="" alt="Logo" class="mx-auto mb-4 w-48 h-48 object-contain hidden">
+        <h1 id="event-name" class="text-2xl font-bold mb-1">Loading...</h1>
+        <p id="event-tagline" class="text-sm mb-6 italic opacity-70">Connecting to your wedding...</p>
         <div class="space-y-4 text-left">
             <input type="text" id="session-id" placeholder="Your Name or Table #"
-                class="w-full p-4 border-2 border-gray-100 rounded-xl focus:border-blue-400 outline-none transition-all">
-            <label id="upload-btn" class="block w-full bg-gray-400 text-white text-center py-5 rounded-2xl font-black cursor-pointer shadow-lg active:scale-95 transition-all">
+                class="w-full p-4 border-2 border-gray-100 rounded-xl focus:outline-none transition-all">
+            <label id="upload-btn" class="block w-full text-center py-5 rounded-2xl font-black cursor-pointer shadow-lg active:scale-95 transition-all">
                 <span>📸 TAKE / SELECT PHOTOS</span>
                 <input type="file" id="photo-input" accept="image/*" multiple class="hidden">
             </label>
             <div id="status" class="text-center text-sm font-bold hidden p-3 rounded-xl"></div>
         </div>
     </div>
+
     <script>
         const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzJJ_BCmf8eAv10A7ULK53CSF33T4e1h-t7PXXqF9_c1lSNMRcmBTnAsfatYVRGDRGA/exec';
         const urlParams = new URLSearchParams(window.location.search);
         const eventKey = urlParams.get('event') || 'Default';
 
+        // Auto-detect if text should be dark or light based on background brightness
+        function getTextColor(hex) {
+            hex = hex.replace('#', '');
+            var r = parseInt(hex.substring(0,2), 16);
+            var g = parseInt(hex.substring(2,4), 16);
+            var b = parseInt(hex.substring(4,6), 16);
+            var brightness = (r * 299 + g * 587 + b * 114) / 1000;
+            return brightness > 128 ? '#1a1a1a' : '#ffffff';
+        }
+
+        // Create a lighter tint of a hex color for the card background
+        function getLightTint(hex) {
+            hex = hex.replace('#', '');
+            var r = parseInt(hex.substring(0,2), 16);
+            var g = parseInt(hex.substring(2,4), 16);
+            var b = parseInt(hex.substring(4,6), 16);
+            r = Math.round(r + (255 - r) * 0.85);
+            g = Math.round(g + (255 - g) * 0.85);
+            b = Math.round(b + (255 - b) * 0.85);
+            return 'rgb(' + r + ',' + g + ',' + b + ')';
+        }
+
         fetch(SCRIPT_URL + '?event=' + eventKey)
             .then(function(res) { return res.json(); })
             .then(function(theme) {
+                var bgColor = theme.bgColor || '#F9F973';
+                var btnColor = theme.btnColor || bgColor;
+                var textColor = theme.textColor || getTextColor(bgColor);
+
+                // Apply background color
+                document.getElementById('body-bg').style.backgroundColor = bgColor;
+
+                // Apply card tint
+                document.getElementById('event-card').style.backgroundColor = getLightTint(bgColor);
+
+                // Apply text colors
+                document.getElementById('event-name').style.color = textColor;
+                document.getElementById('event-tagline').style.color = textColor;
+
+                // Apply button color with auto text contrast
+                var btn = document.getElementById('upload-btn');
+                btn.style.backgroundColor = btnColor;
+                btn.style.color = getTextColor(btnColor);
+
+                // Apply event info
                 document.getElementById('event-name').innerText = theme.name;
                 document.getElementById('event-tagline').innerText = theme.tagline;
-                document.getElementById('upload-btn').style.backgroundColor = theme.color;
-                document.getElementById('body-bg').style.backgroundColor = theme.color + '10';
+
+                // Apply logo
                 if (theme.logo) {
                     var logo = document.getElementById('event-logo');
                     logo.src = theme.logo;
