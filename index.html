@@ -72,7 +72,8 @@
                 btn.style.color = getTextColor(btnColor);
 
                 // Apply event info
-                document.getElementById('event-name').innerText = theme.name;
+               document.getElementById('event-name').innerText = theme.name;
+                document.title = theme.name; // ✅ sets tab name to display name
                 document.getElementById('event-tagline').innerText = theme.tagline;
 
                 // Apply logo
