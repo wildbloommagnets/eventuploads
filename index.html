@@ -8,23 +8,77 @@
 </head>
 <body id="body-bg" class="bg-gray-100 flex items-center justify-center min-h-screen p-4 transition-colors duration-500">
     <div class="bg-white p-8 rounded-3xl shadow-2xl w-full max-w-md text-center border border-gray-100">
-        <img id="event-logo" src="" alt="Logo" crossorigin="anonymous" class="mx-auto mb-4 h-24 object-contain hidden"> <!-- ✅ CHANGED: added crossorigin="anonymous" -->
+        <img id="event-logo" src="" alt="Logo" class="mx-auto mb-4 h-24 object-contain hidden">
         <h1 id="event-name" class="text-2xl font-bold text-gray-800 mb-1">Loading...</h1>
         <p id="event-tagline" class="text-sm text-gray-500 mb-6 italic">Connecting to your wedding...</p>
-
         <div class="space-y-4 text-left">
-            <input type="text" id="session-id" placeholder="Your Name or Table #" 
+            <input type="text" id="session-id" placeholder="Your Name or Table #"
                 class="w-full p-4 border-2 border-gray-100 rounded-xl focus:border-blue-400 outline-none transition-all">
-            
             <label id="upload-btn" class="block w-full bg-gray-400 text-white text-center py-5 rounded-2xl font-black cursor-pointer shadow-lg active:scale-95 transition-all">
                 <span>📸 TAKE / SELECT PHOTOS</span>
                 <input type="file" id="photo-input" accept="image/*" multiple class="hidden">
             </label>
-
             <div id="status" class="text-center text-sm font-bold hidden p-3 rounded-xl"></div>
         </div>
     </div>
-
     <script>
-       const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzJJ_BCmf8eAv10A7ULK53CSF33T4e1h-t7PXXqF9_c1lSNMRcmBTnAsfatYVRGDRGA/exec';
-        const urlParams = new
+        const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbzJJ_BCmf8eAv10A7ULK53CSF33T4e1h-t7PXXqF9_c1lSNMRcmBTnAsfatYVRGDRGA/exec';
+        const urlParams = new URLSearchParams(window.location.search);
+        const eventKey = urlParams.get('event') || 'Default';
+
+        fetch(SCRIPT_URL + '?event=' + eventKey)
+            .then(function(res) { return res.json(); })
+            .then(function(theme) {
+                document.getElementById('event-name').innerText = theme.name;
+                document.getElementById('event-tagline').innerText = theme.tagline;
+                document.getElementById('upload-btn').style.backgroundColor = theme.color;
+                document.getElementById('body-bg').style.backgroundColor = theme.color + '10';
+                if (theme.logo) {
+                    var logo = document.getElementById('event-logo');
+                    logo.src = theme.logo;
+                    logo.classList.remove('hidden');
+                }
+            })
+            .catch(function(err) {
+                document.getElementById('event-name').innerText = 'Connection Error';
+                console.error(err);
+            });
+
+        document.getElementById('photo-input').addEventListener('change', function(e) {
+            var sessionId = document.getElementById('session-id').value || 'Guest';
+            var status = document.getElementById('status');
+            var files = e.target.files;
+            if (!files.length) return;
+
+            status.className = "text-center text-sm font-bold p-3 rounded-xl bg-blue-100 text-blue-700 block";
+            status.innerText = 'Sending ' + files.length + ' photo(s)...';
+
+            for (var i = 0; i < files.length; i++) {
+                (function(file) {
+                    var reader = new FileReader();
+                    reader.readAsDataURL(file);
+                    reader.onload = function() {
+                        fetch(SCRIPT_URL, {
+                            method: 'POST',
+                            body: JSON.stringify({
+                                eventName: eventKey,
+                                sessionId: sessionId,
+                                fileName: file.name,
+                                base64: reader.result
+                            })
+                        })
+                        .then(function() {
+                            status.innerText = '✅ PHOTOS SENT! Printing soon...';
+                            status.className = "text-center text-sm font-bold p-3 rounded-xl bg-green-100 text-green-700 block";
+                        })
+                        .catch(function() {
+                            status.innerText = '❌ ERROR. Try again.';
+                            status.className = "text-center text-sm font-bold p-3 rounded-xl bg-red-100 text-red-700 block";
+                        });
+                    };
+                })(files[i]);
+            }
+        });
+    </script>
+</body>
+</html>
