@@ -27,7 +27,17 @@
         const urlParams = new URLSearchParams(window.location.search);
         const eventKey = urlParams.get('event') || 'Default';
 
-        // Auto-detect if text should be dark or light based on background brightness
+        // ✅ Auto-fill name from local storage if previously entered
+        var savedName = localStorage.getItem('sessionId_' + eventKey);
+        if (savedName) {
+            document.getElementById('session-id').value = savedName;
+        }
+
+        // ✅ Save name to local storage whenever user types
+        document.getElementById('session-id').addEventListener('input', function() {
+            localStorage.setItem('sessionId_' + eventKey, this.value.trim());
+        });
+
         function getTextColor(hex) {
             hex = hex.replace('#', '');
             var r = parseInt(hex.substring(0,2), 16);
@@ -37,7 +47,6 @@
             return brightness > 128 ? '#1a1a1a' : '#ffffff';
         }
 
-        // Create a lighter tint of a hex color for the card background
         function getLightTint(hex) {
             hex = hex.replace('#', '');
             var r = parseInt(hex.substring(0,2), 16);
@@ -52,31 +61,23 @@
         fetch(SCRIPT_URL + '?event=' + eventKey)
             .then(function(res) { return res.json(); })
             .then(function(theme) {
-                var bgColor = theme.bgColor || '#F9F973';
-                var btnColor = theme.btnColor || bgColor;
+                var bgColor   = theme.bgColor   || '#F9F973';
+                var btnColor  = theme.btnColor  || bgColor;
                 var textColor = theme.textColor || getTextColor(bgColor);
 
-                // Apply background color
                 document.getElementById('body-bg').style.backgroundColor = bgColor;
-
-                // Apply card tint
                 document.getElementById('event-card').style.backgroundColor = getLightTint(bgColor);
-
-                // Apply text colors
                 document.getElementById('event-name').style.color = textColor;
                 document.getElementById('event-tagline').style.color = textColor;
 
-                // Apply button color with auto text contrast
                 var btn = document.getElementById('upload-btn');
                 btn.style.backgroundColor = btnColor;
                 btn.style.color = getTextColor(btnColor);
 
-                // Apply event info
-               document.getElementById('event-name').innerText = theme.name;
-                document.title = theme.name; // ✅ sets tab name to display name
+                document.getElementById('event-name').innerText = theme.name;
+                document.title = theme.name;
                 document.getElementById('event-tagline').innerText = theme.tagline;
 
-                // Apply logo
                 if (theme.logo) {
                     var logo = document.getElementById('event-logo');
                     logo.src = theme.logo;
@@ -89,15 +90,15 @@
             });
 
         document.getElementById('photo-input').addEventListener('change', function(e) {
-            var sessionId = document.getElementById('session-id').value || 'Guest';
+            var sessionId = document.getElementById('session-id').value.trim();
             var status = document.getElementById('status');
             var files = e.target.files;
             if (!files.length) return;
-if (!sessionId.trim()) { // ✅ block upload if name/table is empty
-    status.className = "text-center text-sm font-bold p-3 rounded-xl bg-red-100 text-red-700 block";
-    status.innerText = '⚠️ Please enter your name or table number first.';
-    return;
-}
+            if (!sessionId) {
+                status.className = "text-center text-sm font-bold p-3 rounded-xl bg-red-100 text-red-700 block";
+                status.innerText = '⚠️ Please enter your name or table number first.';
+                return;
+            }
 
             status.className = "text-center text-sm font-bold p-3 rounded-xl bg-blue-100 text-blue-700 block";
             status.innerText = 'Sending ' + files.length + ' photo(s)...';
