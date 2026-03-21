@@ -94,11 +94,12 @@
             var status = document.getElementById('status');
             var files = e.target.files;
             if (!files.length) return;
-            if (!sessionId) {
-                status.className = "text-center text-sm font-bold p-3 rounded-xl bg-red-100 text-red-700 block";
-                status.innerText = '⚠️ Please enter your name or table number first.';
-                return;
-            }
+        if (!sessionId) {
+    status.className = "text-center text-sm font-bold p-3 rounded-xl bg-red-100 text-red-700 block";
+    status.innerText = '⚠️ Please enter your name or table number first.';
+    document.getElementById('photo-input').value = ''; // ✅ reset file input so change event fires again
+    return;
+}
 
             status.className = "text-center text-sm font-bold p-3 rounded-xl bg-blue-100 text-blue-700 block";
             status.innerText = 'Sending ' + files.length + ' photo(s)...';
